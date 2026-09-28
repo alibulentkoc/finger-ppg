@@ -67,7 +67,12 @@ canvas.plot { width: 100%; display: block; }
 #wave { height: 120px; margin-top: 6px; }
 #tacho { height: 110px; }
 .caption { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
-.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.m.hero { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.m.hero .v { font-size: 44px; line-height: 1; letter-spacing: -0.02em; color: var(--tacho); }
+.m.hero .k { font-size: 15px; color: var(--ink); font-weight: 600; }
+.m .d { font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+.m.hero .d { flex-basis: 100%; margin-top: 0; }
 .m { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
 .m .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .m .k { font-size: 12px; color: var(--muted); }
@@ -88,7 +93,7 @@ button:focus-visible { outline: 3px solid var(--tacho); outline-offset: 2px; }
 .preview video { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; background: #000; border: 1px solid var(--line); }
 textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); padding: 8px; }
 .hidden { display: none !important; }
-@media (max-width: 420px) { .metrics { grid-template-columns: repeat(2, 1fr); } .hr { font-size: 48px; } }
+@media (max-width: 420px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hr { font-size: 48px; } }
 </style>
 </head>
 <body>
@@ -99,15 +104,15 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
   </div>
 
   <h1>Finger pulse and HRV</h1>
-  <p class="sub">Contact photoplethysmography with the phone camera. For learning and demos, not for medical use.</p>
+  <p class="sub">Heart rate and heart rate variability (HRV) from contact photoplethysmography (PPG) with the phone camera. For learning and demos, not for medical use.</p>
 
   <div class="scope">
     <div class="scopehead">
-      <div class="hr" id="hr">--<small>bpm</small></div>
+      <div class="hr" id="hr">--<small>beats/min</small></div>
       <div class="status">
         <div><span class="dot" id="fdot"></span><span id="ftext">Not running</span></div>
         <div id="qtext">Signal: --</div>
-        <div id="fpstext">-- fps</div>
+        <div id="fpstext">-- frames/s</div>
       </div>
     </div>
     <canvas class="plot" id="wave"></canvas>
@@ -115,10 +120,14 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
   </div>
 
   <div class="metrics">
-    <div class="m"><div class="v" id="rmssd">--</div><div class="k">RMSSD (ms)</div></div>
-    <div class="m"><div class="v" id="sdnn">--</div><div class="k">SDNN (ms)</div></div>
-    <div class="m"><div class="v" id="pnn">--</div><div class="k">pNN50 (%)</div></div>
-    <div class="m"><div class="v" id="beats">0</div><div class="k">Clean beats</div></div>
+    <div class="m hero">
+      <div class="v" id="rmssd">--</div>
+      <div class="k">HRV (RMSSD), ms</div>
+      <div class="d">Heart rate variability. RMSSD is the root mean square of successive differences between beat intervals. This is the main HRV number that watches and chest straps report.</div>
+    </div>
+    <div class="m"><div class="v" id="sdnn">--</div><div class="k">SDNN (ms)</div><div class="d">Standard deviation of normal-to-normal beat intervals</div></div>
+    <div class="m"><div class="v" id="pnn">--</div><div class="k">pNN50 (%)</div><div class="d">Percent of successive beat intervals that differ by more than 50 ms</div></div>
+    <div class="m"><div class="v" id="beats">0</div><div class="k">Clean beats</div><div class="d">Beats kept in the last 60 s after rejecting noisy ones</div></div>
   </div>
 
   <div class="scope">
@@ -151,7 +160,7 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
       <li>Tap "Front camera + screen light". The camera opens right away. Tap Allow if asked. The top of the page turns white.</li>
       <li>Rest your fingertip over the front camera, top center of the screen. Touch lightly. Pressing hard squeezes out the blood and flattens the signal.</li>
       <li>Keep your hand and phone still. Sit, rest the forearm on a table.</li>
-      <li>Wait about 10 s for heart rate. HRV values appear after about 20 clean beats. Use 1 to 2 minutes for a stable RMSSD.</li>
+      <li>Wait about 10 s for heart rate. HRV values appear after about 20 clean beats. Use 1 to 2 minutes for a stable HRV (RMSSD) value.</li>
     </ol>
     <h2>Rear camera</h2>
     <p>Tap "Rear camera" to open it. Cover the main lens (the top-left lens on most iPhones). Safari usually cannot switch on the flash from a web page, so use a bright lamp or daylight behind your finger. If the browser supports it, the page turns the flash on for you.</p>
@@ -427,12 +436,12 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
     var now = performance.now();
     if (now - S.fpsT >= 1000) { S.fps = S.frames * 1000 / (now - S.fpsT); S.frames = 0; S.fpsT = now; }
     var m = metrics();
-    $("hr").innerHTML = (m.hr ? Math.round(m.hr) : "--") + "<small>bpm</small>";
+    $("hr").innerHTML = (m.hr ? Math.round(m.hr) : "--") + "<small>beats/min</small>";
     $("rmssd").textContent = fmt(m.rmssd, 0);
     $("sdnn").textContent = fmt(m.sdnn, 0);
     $("pnn").textContent = fmt(m.pnn, 0);
     $("beats").textContent = m.n;
-    $("fpstext").textContent = S.fps.toFixed(0) + " fps, " + (S.chan === "r" ? "red" : "green") + " channel";
+    $("fpstext").textContent = S.fps.toFixed(0) + " frames/s, " + (S.chan === "r" ? "red" : "green") + " channel";
 
     var dot = $("fdot"), ft = $("ftext");
     if (!S.finger) { dot.className = "dot bad"; ft.textContent = "No finger on lens"; }
@@ -552,7 +561,7 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
   $("startBtn").addEventListener("click", function () { if (S.running) stop(); else start(); });
 
   function csv() {
-    var lines = ["beat_time_s,ibi_ms,contiguous"];
+    var lines = ["beat_time_s,interbeat_interval_ms,contiguous"];
     var t0 = beats.length ? beats[0].t : 0;
     beats.forEach(function (b) { lines.push(((b.t - t0) / 1000).toFixed(3) + "," + b.ibi.toFixed(1) + "," + (b.contig ? 1 : 0)); });
     return lines.join("\n");
