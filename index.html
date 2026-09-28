@@ -28,61 +28,95 @@
   --bg: #10151b; --panel: #18202a; --ink: #e7ecf1; --muted: #93a1b0; --line: #2a3542;
   --trace: #ff5470; --tacho: #6fb3e8; --good: #5fcf7f; --warn: #f0b24a; --bad: #ff6b61;
   --btn: #e7ecf1; --btnInk: #10151b; --soft: #1f2b38;
-    --cohLow: #6b5020; --cohMed: #24527a; --cohHigh: #22663a;
+  --cohLow: #6b5020; --cohMed: #24527a; --cohHigh: #22663a;
 }
 :root.lamp { --bg: #ffffff; --panel: #ffffff; }
 *, *::before, *::after { box-sizing: inherit; }
-html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Avenir Next", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.45; }
-.wrap { max-width: 640px; margin: 0 auto; padding: 12px 16px 28px; }
-.lampband { display: none; height: 26vh; min-height: 150px; background: #ffffff; margin: calc(-1 * env(safe-area-inset-top, 0px)) -16px 8px; padding-top: env(safe-area-inset-top, 0px); text-align: center; color: #5a6776; font-size: 14px; }
-:root.lamp .lampband { display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; }
-h1 { font-size: 22px; font-weight: 600; margin: 6px 0 2px; letter-spacing: -0.01em; }
-.sub { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
-.scope { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px 8px; margin-bottom: 12px; }
-.scopehead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.hr { font-size: 56px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.hr small { font-size: 16px; font-weight: 500; color: var(--muted); margin-left: 4px; }
-.status { text-align: right; font-size: 13px; color: var(--muted); }
-.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); margin-right: 5px; }
+html, body { height: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); font-family: "Avenir Next", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.4; }
+button { font: inherit; color: inherit; }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--tacho); outline-offset: 2px; }
+.hidden { display: none !important; }
+
+/* one-screen app */
+.app { height: 100%; max-width: 560px; margin: 0 auto; padding: 6px 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.lampband { display: none; flex: none; height: 15vh; min-height: 96px; margin: 0 -14px; background: #ffffff; color: #5a6776; font-size: 13px; text-align: center; flex-direction: column; justify-content: flex-end; padding-bottom: 4px; }
+:root.lamp .lampband { display: flex; }
+.top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.top h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+:root.lamp .top { display: none; }
+.pill { border: 1px solid var(--line); background: var(--panel); border-radius: 20px; padding: 6px 12px; font-size: 14px; cursor: pointer; }
+
+.readout { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.big { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; }
+.big .v { font-size: 40px; font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.big .k { font-size: 12px; color: var(--muted); }
+.big.hrv .v { color: var(--tacho); }
+.statusrow { flex: none; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.statusrow .grow { flex: 1; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); margin-right: 4px; }
 .dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
-.progress { height: 6px; background: var(--soft); border-radius: 3px; margin: 10px 0 2px; overflow: hidden; }
+.progress { flex: none; height: 5px; background: var(--soft); border-radius: 3px; overflow: hidden; }
 .progress div { height: 100%; width: 0%; background: var(--tacho); transition: width 0.25s linear; }
-.ptext { font-size: 13px; color: var(--muted); }
-canvas.plot { width: 100%; display: block; }
-#wave { height: 120px; margin-top: 6px; }
-#tacho { height: 110px; }
-.caption { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
-.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
-.m { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
-.m .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.m .k { font-size: 12px; color: var(--muted); }
-.m.hero { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-.m.hero .v { font-size: 44px; line-height: 1; letter-spacing: -0.02em; color: var(--tacho); }
-.m.hero .k { font-size: 15px; color: var(--ink); font-weight: 600; }
-.m .d { font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
-.m.hero .d { flex-basis: 100%; margin-top: 0; }
-.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
-.seg button { border: 0; background: transparent; color: var(--ink); padding: 10px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+
+.stagearea { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#charts { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.chart { flex: 1; min-height: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 8px 4px; display: flex; flex-direction: column; }
+.chart canvas { flex: 1; min-height: 0; width: 100%; display: block; }
+.chart .cap { font-size: 11px; color: var(--muted); }
+#pacer { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+#stagewrap { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+.stage { position: relative; display: flex; align-items: center; justify-content: center; }
+.ring { position: absolute; inset: 0; border-radius: 50%; border: 2px dashed var(--line); }
+.orb { width: 100%; height: 100%; border-radius: 50%; background: var(--cohLow); transform: scale(0.45); transition: background-color 1.5s ease; }
+.orb.Medium { background: var(--cohMed); } .orb.High { background: var(--cohHigh); }
+.cue { position: absolute; font-size: 19px; font-weight: 600; }
+.coach { flex: none; font-size: 16px; font-weight: 600; text-align: center; min-height: 2.5em; margin-top: 4px; }
+.cohline { flex: none; font-size: 12px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.zonebar { flex: none; width: 100%; display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--soft); margin-top: 6px; }
+.zonebar div { height: 100%; width: 0%; transition: width 0.4s linear; }
+.zonekey { flex: none; display: flex; gap: 14px; font-size: 12px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; }
+
+.minis { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.mini { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 8px; }
+.mini .v { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mini .k { font-size: 11px; color: var(--muted); }
+
+.controls { flex: none; display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); flex: 1; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 9px 4px; font-size: 14px; cursor: pointer; }
+.seg button[data-breath] { flex: 1.7; white-space: nowrap; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
-.go { border: 0; border-radius: 10px; padding: 11px 20px; font: inherit; font-weight: 600; background: var(--btn); color: var(--btnInk); cursor: pointer; min-width: 110px; }
-.ghost { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font: inherit; font-size: 14px; background: var(--panel); color: var(--ink); cursor: pointer; }
-button:focus-visible { outline: 3px solid var(--tacho); outline-offset: 2px; }
-.msg { font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); margin-bottom: 12px; }
+.seg button:disabled { opacity: 0.5; }
+select { font: inherit; font-size: 14px; padding: 8px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); }
+.cam { flex: 1; border: 0; border-radius: 12px; padding: 13px 8px; font-weight: 600; background: var(--btn); color: var(--btnInk); cursor: pointer; }
+.cam.alt { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+.note { font-size: 12px; color: var(--muted); }
+.runrow { display: flex; align-items: center; gap: 10px; }
+.runrow video { width: 44px; height: 33px; object-fit: cover; border-radius: 6px; background: #000; flex: none; }
+.runrow .note { flex: 1; }
+.stop { border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 600; background: var(--btn); color: var(--btnInk); cursor: pointer; }
+:root.running .idleOnly { display: none !important; }
+:root:not(.running) .runOnly { display: none !important; }
+.msg { font-size: 13px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); max-height: 30vh; overflow: auto; }
 .msg.err { border-color: var(--bad); color: var(--bad); }
-.how { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px 10px; font-size: 14px; }
-.how h2 { font-size: 15px; margin: 10px 0 4px; }
-.how ol { padding-left: 20px; margin: 4px 0 8px; }
-.how p { margin: 4px 0 8px; color: var(--muted); }
-.preview { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
-.preview video { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; background: #000; border: 1px solid var(--line); flex: none; }
-.report { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--tacho); border-radius: 0; padding: 12px 16px 14px; margin-bottom: 12px; }
-.report h2 { font-size: 19px; margin: 2px 0 10px; }
-.report h3 { font-size: 15px; margin: 14px 0 4px; }
-.report p { margin: 4px 0 8px; max-width: 62ch; }
-.rhead { display: flex; gap: 22px; flex-wrap: wrap; align-items: baseline; margin-bottom: 6px; }
-.rhead .big { font-size: 40px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* sheets: help and report */
+.sheet { position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: 10; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+.sheetin { max-width: 640px; margin: 0 auto; padding: 10px 16px 28px; }
+.sheethead { position: sticky; top: 0; background: var(--bg); display: flex; justify-content: space-between; align-items: center; padding: 6px 0; z-index: 1; }
+.sheethead h2, #report h2 { font-size: 19px; margin: 0 0 4px; }
+.sheet h3 { font-size: 15px; margin: 16px 0 4px; }
+.sheet p, .sheet li { max-width: 64ch; }
+.sheet p { margin: 4px 0 8px; }
+.sheet ol { padding-left: 20px; margin: 4px 0 8px; }
+.sheet dl { margin: 4px 0; } .sheet dt { font-weight: 600; margin-top: 8px; } .sheet dd { margin: 2px 0 0; color: var(--muted); }
+.rhead { display: flex; gap: 22px; flex-wrap: wrap; align-items: baseline; margin: 6px 0; }
+.rhead .big2 { font-size: 40px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
 .rhead .lbl { font-size: 13px; color: var(--muted); }
 .badge { display: inline-block; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid currentColor; }
 .badge.High { color: var(--good); } .badge.Medium { color: var(--warn); } .badge.Low { color: var(--bad); }
@@ -91,95 +125,74 @@ button:focus-visible { outline: 3px solid var(--tacho); outline-offset: 2px; }
 .rtable td:last-child { text-align: right; }
 .tablewrap { overflow-x: auto; }
 .fine { font-size: 12px; color: var(--muted); }
-textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); padding: 8px; }
-.hidden { display: none !important; }
-.session { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 12px; }
-.session .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.session .lab { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
-.seg.small button { padding: 9px 11px; }
-select { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); }
-.seg button:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
-.pacer { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 12px 12px; margin-bottom: 12px; text-align: center; }
-.stage { position: relative; width: min(62vw, 250px); height: min(62vw, 250px); margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; }
-.ring { position: absolute; inset: 0; border-radius: 50%; border: 2px dashed var(--line); }
-.orb { width: 100%; height: 100%; border-radius: 50%; background: var(--cohLow); transform: scale(0.45); transition: background-color 1.5s ease; }
-.orb.Medium { background: var(--cohMed); } .orb.High { background: var(--cohHigh); }
-.cue { position: absolute; font-size: 20px; font-weight: 600; color: var(--ink); }
-.coach { font-size: 17px; font-weight: 600; min-height: 2.6em; margin: 4px 0 8px; }
-.cohline { font-size: 13px; color: var(--muted); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
-.zones { display: grid; gap: 6px; text-align: left; }
-.zone { display: grid; grid-template-columns: 70px 1fr 44px; align-items: center; gap: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
-.zone .bar { height: 10px; background: var(--soft); border-radius: 5px; overflow: hidden; }
-.zone .bar div { height: 100%; width: 0%; }
-.zone .pct { text-align: right; }
-:root.running h1, :root.running .sub { display: none; }
-@media (max-width: 420px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hr { font-size: 48px; } }
-@media (prefers-reduced-motion: reduce) { .progress div { transition: none; } }
+.btnrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.go { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 600; background: var(--btn); color: var(--btnInk); cursor: pointer; }
+.ghost { border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 14px; background: var(--panel); cursor: pointer; }
+textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); padding: 8px; margin-top: 8px; }
+@media (max-height: 700px) { .big .v { font-size: 32px; } .lampband { height: 12vh; min-height: 80px; } }
+@media (prefers-reduced-motion: reduce) { .progress div, .zonebar div, .orb { transition: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
   <div class="lampband" id="lampband">
-    <div>^ The front camera sits in the Dynamic Island, top center.</div>
-    <div>Rest your fingertip lightly over it. This white area lights your finger.</div>
+    <div>^ Front camera: top center, in the Dynamic Island.</div>
+    <div>Rest your fingertip lightly over it.</div>
   </div>
 
-  <h1>Finger pulse and HRV</h1>
-  <p class="sub">Heart rate and heart rate variability (HRV) from contact photoplethysmography (PPG) with the phone camera. For learning and general wellness, not for medical use.</p>
+  <div class="top">
+    <h1>Finger pulse and HRV</h1>
+    <button class="pill" id="helpBtn">How it works</button>
+  </div>
 
-  <div class="report hidden" id="report" aria-live="polite"></div>
+  <div class="readout">
+    <div class="big"><div class="v" id="hr">--</div><div class="k">Heart rate, beats/min</div></div>
+    <div class="big hrv"><div class="v" id="rmssd">--</div><div class="k">HRV (RMSSD), ms</div></div>
+  </div>
 
-  <div class="pacer hidden" id="pacer">
-    <div class="stage"><div class="ring"></div><div class="orb" id="orb"></div><div class="cue" id="cue">Breathe in</div></div>
-    <div class="coach" id="coach" aria-live="polite">Follow the circle. Breathe in as it grows, out as it shrinks.</div>
-    <div class="cohline" id="cohline">Coherence: -- (starts after about 30 s)</div>
-    <div class="zones">
-      <div class="zone"><span>High</span><div class="bar"><div id="zHigh" style="background:var(--good)"></div></div><span class="pct" id="pHigh">0%</span></div>
-      <div class="zone"><span>Medium</span><div class="bar"><div id="zMedium" style="background:var(--tacho)"></div></div><span class="pct" id="pMedium">0%</span></div>
-      <div class="zone"><span>Low</span><div class="bar"><div id="zLow" style="background:var(--warn)"></div></div><span class="pct" id="pLow">0%</span></div>
+  <div class="statusrow">
+    <span><span class="dot" id="fdot"></span><span id="ftext">Ready</span></span>
+    <span class="grow" id="qtext"></span>
+    <span id="ptext">Pick a session, then a camera.</span>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="pbar"></div></div>
+
+  <div class="stagearea">
+    <div id="charts">
+      <div class="chart"><canvas id="wave" aria-label="Live pulse wave"></canvas><div class="cap">Pulse wave, last 6 s. Dots are detected beats.</div></div>
+      <div class="chart"><canvas id="tacho" aria-label="Beat-to-beat heart rate"></canvas><div class="cap">Beat-to-beat heart rate, last 60 s. Open dots were removed as noise.</div></div>
     </div>
-  </div>
-
-  <div class="scope">
-    <div class="scopehead">
-      <div class="hr" id="hr">--<small>beats/min</small></div>
-      <div class="status">
-        <div><span class="dot" id="fdot"></span><span id="ftext">Not running</span></div>
-        <div id="qtext">Signal: --</div>
-        <div id="fpstext">-- frames/s</div>
+    <div id="pacer" class="hidden">
+      <div id="stagewrap"><div class="stage" id="stage"><div class="ring"></div><div class="orb" id="orb"></div><div class="cue" id="cue">Breathe</div></div></div>
+      <div class="coach" id="coach" aria-live="polite"></div>
+      <div class="cohline" id="cohline"></div>
+      <div class="zonebar" aria-hidden="true"><div id="zHigh" style="background:var(--good)"></div><div id="zMedium" style="background:var(--tacho)"></div><div id="zLow" style="background:var(--warn)"></div></div>
+      <div class="zonekey">
+        <span><span class="sw" style="background:var(--good)"></span>High <b id="pHigh">0%</b></span>
+        <span><span class="sw" style="background:var(--tacho)"></span>Medium <b id="pMedium">0%</b></span>
+        <span><span class="sw" style="background:var(--warn)"></span>Low <b id="pLow">0%</b></span>
       </div>
     </div>
-    <div class="progress" aria-hidden="true"><div id="pbar"></div></div>
-    <div class="ptext" id="ptext">Pick a session length, then tap a camera button. The report appears when the session ends.</div>
-    <canvas class="plot" id="wave"></canvas>
-    <p class="caption">Pulse wave, last 6 s. Dots mark detected beats.</p>
   </div>
 
-  <div class="metrics">
-    <div class="m hero">
-      <div class="v" id="rmssd">--</div>
-      <div class="k">HRV (RMSSD), ms</div>
-      <div class="d">Heart rate variability. RMSSD is the root mean square of successive differences between beat intervals. This is the main HRV number that watches and chest straps report.</div>
-    </div>
-    <div class="m"><div class="v" id="sdnn">--</div><div class="k">SDNN (ms)</div><div class="d">Standard deviation of normal-to-normal beat intervals</div></div>
-    <div class="m"><div class="v" id="pnn">--</div><div class="k">pNN50 (%)</div><div class="d">Percent of successive beat intervals that differ by more than 50 ms</div></div>
-    <div class="m"><div class="v" id="beats">0</div><div class="k">Clean beats</div><div class="d">Beats kept after removing missed, extra, and mistimed beats</div></div>
+  <div class="minis" id="minis">
+    <div class="mini"><div class="v" id="sdnn">--</div><div class="k">SDNN, ms</div></div>
+    <div class="mini"><div class="v" id="pnn">--</div><div class="k">pNN50, %</div></div>
+    <div class="mini"><div class="v" id="beats">0</div><div class="k">Clean beats</div></div>
   </div>
 
-  <div class="scope">
-    <canvas class="plot" id="tacho"></canvas>
-    <p class="caption">Beat-to-beat heart rate, last 60 s. Filled dots are clean beats. Open dots were removed as noise.</p>
-  </div>
-
-  <div class="session">
-    <p class="lab">Session</p>
-    <div class="row">
-      <div class="seg small" role="group" aria-label="Session length">
+  <div class="controls">
+    <div class="msg hidden" id="msg"></div>
+    <div class="row idleOnly">
+      <div class="seg" id="sessionSeg" role="group" aria-label="Session length">
         <button data-min="2" aria-pressed="true">2 min</button>
         <button data-min="3" aria-pressed="false">3 min</button>
         <button data-min="5" aria-pressed="false">5 min</button>
-        <button data-min="10" data-breath="1" aria-pressed="false">10 min breathing</button>
+        <button data-min="10" data-breath="1" aria-pressed="false">10 min breathe</button>
       </div>
+    </div>
+    <div class="row idleOnly">
+      <span class="note" id="sessionNote" style="flex:1">Resting reading. Breathe normally, hold still.</span>
       <select id="pace" class="hidden" aria-label="Breathing pace">
         <option value="5">5 breaths/min</option>
         <option value="5.5">5.5 breaths/min</option>
@@ -187,43 +200,68 @@ select { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid va
         <option value="6.5">6.5 breaths/min</option>
         <option value="7">7 breaths/min</option>
       </select>
+      <button class="pill hidden" id="lastRep">Last report</button>
     </div>
-    <p class="lab" id="sessionNote" style="margin:8px 0 0">A resting reading. Breathe normally and hold still.</p>
-  </div>
-
-  <div class="controls">
-    <div class="seg" role="group" aria-label="Camera">
-      <button id="modeFront" aria-pressed="false">Front camera + screen light</button>
-      <button id="modeRear" aria-pressed="false">Rear camera</button>
+    <div class="row idleOnly">
+      <button class="cam" id="modeFront" aria-pressed="false">Start: front camera</button>
+      <button class="cam alt" id="modeRear" aria-pressed="false">Start: rear camera</button>
     </div>
-    <button class="go" id="startBtn">Start</button>
+    <div class="runrow runOnly">
+      <video id="vid" playsinline muted autoplay></video>
+      <span class="note"><span id="camtext"></span> <span id="fpstext"></span></span>
+      <button class="stop" id="startBtn">Stop</button>
+    </div>
   </div>
+</div>
 
-  <div class="preview"><video id="vid" playsinline muted autoplay></video><span id="camtext">Tap a camera button to begin. The preview should look evenly red when your finger covers the lens.</span></div>
-
-  <div class="msg hidden" id="msg"></div>
-
-  <div class="hidden" id="dataBox">
-    <textarea id="dataText" readonly aria-label="Beat data as CSV"></textarea>
+<div class="sheet hidden" id="reportSheet" role="dialog" aria-modal="true" aria-label="Report">
+  <div class="sheetin">
+    <div class="sheethead"><span></span><button class="pill sheetclose" data-close="reportSheet">Close</button></div>
+    <div id="report"></div>
+    <div class="hidden" id="dataBox"><textarea id="dataText" readonly aria-label="Copy text"></textarea></div>
   </div>
+</div>
 
-  <div class="how">
-    <h2>Front camera (recommended on iPhone)</h2>
+<div class="sheet hidden" id="helpSheet" role="dialog" aria-modal="true" aria-label="How it works">
+  <div class="sheetin">
+    <div class="sheethead"><h2>How it works</h2><button class="pill sheetclose" data-close="helpSheet">Close</button></div>
+
+    <h3>Take a reading</h3>
     <ol>
-      <li>Sit down and rest your forearm on a table. Breathe normally for a minute first.</li>
+      <li>Sit down, rest your forearm on a table, and breathe normally for a minute.</li>
       <li>Turn screen brightness all the way up.</li>
-      <li>Tap "Front camera + screen light". The camera opens right away. Tap Allow if asked. The top of the page turns white.</li>
+      <li>Pick a session: 2, 3, or 5 min for a resting reading, or 10 min breathe for the breathing exercise.</li>
+      <li>Tap "Start: front camera" and allow camera access. The top of the screen turns white to light your finger.</li>
       <li>Rest your fingertip over the front camera, top center of the screen. Touch lightly. Pressing hard squeezes out the blood and flattens the signal.</li>
-      <li>Hold still for 2 minutes. The reading stops by itself and shows your report.</li>
+      <li>Hold still. The timer pauses if you lift your finger. Your report opens when the session ends. Tap Stop to end early.</li>
     </ol>
-    <h2>Rear camera</h2>
-    <p>Tap "Rear camera" to open it. Cover the main lens (the top-left lens on most iPhones). Safari usually cannot switch on the flash from a web page, so use a bright lamp or daylight behind your finger. If the browser supports it, the page turns the flash on for you.</p>
-    <h2>Breathing exercise</h2>
-    <p>Choose "10 min breathing" before opening the camera. Breathe in as the circle grows and out as it shrinks. The circle turns green when your heart rate rises and falls smoothly with your breath. This is called coherence. The bars show how much of the session you spent in high, medium, and low coherence. Most people reach high coherence at 5 to 7 breaths per minute. Breathe gently. Slow does not mean deep.</p>
-    <h2>Getting comparable readings</h2>
-    <p>HRV changes through the day. Measure at the same time each day, ideally in the morning, in the same position. The report compares each reading with your earlier ones on this device.</p>
-    <h2>Privacy</h2>
-    <p>Everything runs on your phone. No video or data leaves the device. Past results are kept only in this browser, and you can clear them from the report.</p>
+
+    <h3>Rear camera</h3>
+    <p>Cover the main lens (top-left on most iPhones). Safari usually cannot turn on the flash from a web page, so use a bright lamp or daylight behind your finger. If the browser allows it, the flash turns on by itself.</p>
+
+    <h3>Breathing exercise</h3>
+    <p>Breathe in as the circle grows and out as it shrinks. The out-breath is a little longer, which is calming. Breathe gently. Slow does not mean deep.</p>
+    <p>The circle turns from amber to blue to green as your heart rate starts to rise and fall smoothly with your breath. This is called coherence. The bar under the circle shows how much of the session you spent in high, medium, and low coherence. The coaching line tells you to slow down or speed up if your breathing drifts from the guide. Most people reach high coherence at 5 to 7 breaths per minute.</p>
+
+    <h3>What the numbers mean</h3>
+    <dl>
+      <dt>Heart rate (beats/min)</dt><dd>Beats per minute, from the median of your last few beats.</dd>
+      <dt>HRV, heart rate variability (RMSSD, ms)</dt><dd>The small, natural change in time from one beat to the next. RMSSD is the root mean square of successive differences between beat intervals. It mainly reflects the calming (parasympathetic) side of your nervous system. It is usually higher when you are rested and lower after poor sleep, stress, illness, alcohol, or hard exercise. Many healthy adults measure about 20 to 80 ms at rest, and values drop with age.</dd>
+      <dt>SDNN (ms)</dt><dd>Standard deviation of normal-to-normal beat intervals. Overall variability across the whole session.</dd>
+      <dt>pNN50 (%)</dt><dd>Percent of successive beat intervals that differ by more than 50 ms.</dd>
+      <dt>Clean beats</dt><dd>Beats kept after removing missed, extra, and mistimed beats caused by movement or pressure changes.</dd>
+      <dt>Coherence (%)</dt><dd>The share of your heart rate variation that sits in one smooth wave, usually your breathing rhythm. High is 70% or more, medium is 45 to 70%, low is below 45%. It is calculated from the last 64 s of clean beats.</dd>
+      <dt>Quality (High, Medium, Low)</dt><dd>Based on how many beats passed the checks. Treat Low-quality HRV values as rough estimates.</dd>
+    </dl>
+
+    <h3>Getting comparable readings</h3>
+    <p>HRV changes through the day. Measure at the same time each day, ideally in the morning, in the same position. After 3 good resting readings, the report compares each new one with your usual value. Breathing sessions are kept separate, because slow breathing raises HRV.</p>
+
+    <h3>Privacy</h3>
+    <p>Everything runs on your phone. No video or data leaves the device. Past results are saved only in this browser, and you can clear them from the report.</p>
+
+    <h3>Limits</h3>
+    <p class="fine">This tool uses contact photoplethysmography (PPG): the camera sees tiny brightness changes in your fingertip as blood pulses through it. It is for learning and general wellness. It is not a medical device and cannot diagnose any condition. If you have symptoms such as chest pain, fainting, or a racing or irregular heartbeat, contact a clinician.</p>
   </div>
 </div>
 
@@ -564,7 +602,7 @@ function coherence(raw, good, tNowMs) {
 
     var recentIbi = rawLog.slice(-5).filter(function (b) { return rawLog.length && rawLog[rawLog.length - 1].t - b.t < 8000; }).map(function (b) { return b.ibi; });
     var hr = recentIbi.length >= 3 && measuring ? 60000 / median(recentIbi) : null;
-    $("hr").innerHTML = (hr ? Math.round(hr) : "--") + "<small>beats/min</small>";
+    $("hr").textContent = hr ? Math.round(hr) : "--";
     $("rmssd").textContent = a ? fmt(a.rmssd, 0) : "--";
     $("sdnn").textContent = a ? fmt(a.sdnn, 0) : "--";
     $("pnn").textContent = a ? fmt(a.pnn50, 0) : "--";
@@ -580,8 +618,8 @@ function coherence(raw, good, tNowMs) {
 
     var frac = Math.min(1, S.measured / TARGET_MS);
     $("pbar").style.width = (frac * 100).toFixed(1) + "%";
-    $("ptext").textContent = measuring ? "Measuring. " + mmss(TARGET_MS - S.measured) + " left. Keep still." :
-      S.finger ? "Settling. Hold still." : "Place your fingertip over the camera. The timer pauses while it is off.";
+    $("ptext").textContent = measuring ? mmss(TARGET_MS - S.measured) + " left" :
+      S.finger ? "Settling..." : "Timer paused. Cover the camera.";
     if (S.breathing) updateBreathing(now, dt, measuring, a);
     if (S.measured >= TARGET_MS) finish();
   }
@@ -752,8 +790,8 @@ function coherence(raw, good, tNowMs) {
 
     var h = '<h2>' + (br ? 'Your breathing session' : 'Your report') + '</h2>';
     h += '<div class="rhead">';
-    h += '<div><div class="big" style="color:var(--tacho)">' + (r.hrv !== null ? r.hrv : "--") + '</div><div class="lbl">HRV (RMSSD), ms</div></div>';
-    h += '<div><div class="big">' + (r.hr || "--") + '</div><div class="lbl">Heart rate, beats/min</div></div>';
+    h += '<div><div class="big2" style="color:var(--tacho)">' + (r.hrv !== null ? r.hrv : "--") + '</div><div class="lbl">HRV (RMSSD), ms</div></div>';
+    h += '<div><div class="big2">' + (r.hr || "--") + '</div><div class="lbl">Heart rate, beats/min</div></div>';
     h += '<div><span class="badge ' + r.quality + '">' + r.quality + ' quality</span><div class="lbl">' + esc(whenTxt) + '</div></div>';
     h += '</div>';
     r.paras.forEach(function (p) { if (p[0]) h += '<h3>' + esc(p[0]) + '</h3>'; h += '<p>' + esc(p[1]) + '</p>'; });
@@ -771,7 +809,7 @@ function coherence(raw, good, tNowMs) {
     h += '<h3>Details</h3><div class="tablewrap"><table class="rtable">';
     r.rows.forEach(function (row) { h += '<tr><td>' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td></tr>'; });
     h += '</table></div>';
-    h += '<div class="controls" style="margin-top:12px">' +
+    h += '<div class="btnrow">' +
       '<button class="go" id="againBtn">Measure again</button>' +
       '<button class="ghost" id="copyRep">Copy report</button>' +
       '<button class="ghost" id="copyCsv">Copy beat data</button>' +
@@ -779,10 +817,10 @@ function coherence(raw, good, tNowMs) {
     h += '<p class="fine">For learning and general wellness. This is not a medical device and cannot diagnose any condition. If you have symptoms such as chest pain, fainting, or a racing or irregular heartbeat, contact a clinician.</p>';
 
     var box = $("report");
-    box.innerHTML = h; box.classList.remove("hidden");
-    window.scrollTo(0, 0);
+    box.innerHTML = h;
+    openSheet("reportSheet");
 
-    $("againBtn").addEventListener("click", function () { box.classList.add("hidden"); start(); });
+    $("againBtn").addEventListener("click", function () { closeSheet("reportSheet"); start(); });
     $("copyRep").addEventListener("click", function () { copyText(lastReport.text, $("copyRep"), "Copy report"); });
     $("copyCsv").addEventListener("click", function () { copyText(lastReport.csv, $("copyCsv"), "Copy beat data"); });
     $("clearHist").addEventListener("click", function () {
@@ -810,13 +848,13 @@ function coherence(raw, good, tNowMs) {
   function hideMsg() { $("msg").classList.add("hidden"); }
   function setLamp(on) {
     var r = document.documentElement;
-    if (on) { r.classList.add("lamp"); r.setAttribute("data-theme", "light"); window.scrollTo(0, 0); }
+    if (on) { r.classList.add("lamp"); r.setAttribute("data-theme", "light"); }
     else { r.classList.remove("lamp"); r.removeAttribute("data-theme"); }
   }
 
   function start() {
     hideMsg();
-    $("report").classList.add("hidden");
+    closeSheet("reportSheet"); closeSheet("helpSheet");
     $("dataBox").classList.add("hidden");
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       showMsg("This browser cannot open the camera from this page. Open the page directly in Safari (not inside another app) over https.", true);
@@ -840,9 +878,9 @@ function coherence(raw, good, tNowMs) {
       TARGET_MS = S.minutes * 60000;
       S.coh = null; S.lastCoh = 0; S.zones = { High: 0, Medium: 0, Low: 0 }; S.rateSum = 0; S.rateN = 0;
       S.coachText = ""; S.coachT = 0; S.pacerT0 = performance.now();
-      $("pacer").classList.toggle("hidden", !S.breathing);
       document.documentElement.classList.add("running");
       lockSession(true);
+      updateStageMode();
       $("startBtn").textContent = "Stop";
       if (S.mode === "front") { setLamp(true); $("camtext").textContent = "Front camera. Cover it fully with your fingertip."; }
       else tryTorch();
@@ -891,9 +929,9 @@ function coherence(raw, good, tNowMs) {
     if (S.wake) { try { S.wake.release(); } catch (e) {} S.wake = null; }
     video.srcObject = null;
     setLamp(false);
-    $("pacer").classList.add("hidden");
     document.documentElement.classList.remove("running");
     lockSession(false);
+    updateStageMode();
     $("startBtn").textContent = "Start";
     $("fdot").className = "dot"; $("ftext").textContent = "Stopped";
     $("camtext").textContent = "Tap a camera button to begin. The preview should look evenly red when your finger covers the lens.";
@@ -905,12 +943,12 @@ function coherence(raw, good, tNowMs) {
     var a = analyze(rawLog);
     S.analysis = a;
     drawWave(); drawTacho();
-    if (a && a.n >= MIN_REPORT_BEATS) { showReport(a, breathSummary()); $("ptext").textContent = "Reading complete. Your report is at the top."; }
+    if (a && a.n >= MIN_REPORT_BEATS) { showReport(a, breathSummary()); $("ptext").textContent = "Done. Tap Last report to see it again."; $("lastRep").classList.remove("hidden"); }
     else { showMsg("That reading was too short for a report. Keep your fingertip on the camera for at least 30 seconds.", false); $("ptext").textContent = "Reading stopped early."; }
   }
 
   // ---------- Session picker ----------
-  var segBtns = Array.prototype.slice.call(document.querySelectorAll(".session .seg button"));
+  var segBtns = Array.prototype.slice.call(document.querySelectorAll("#sessionSeg button"));
   function lockSession(on) { segBtns.forEach(function (b) { b.disabled = on; }); $("pace").disabled = on; }
   segBtns.forEach(function (b) {
     b.addEventListener("click", function () {
@@ -918,12 +956,13 @@ function coherence(raw, good, tNowMs) {
       S.minutes = +b.getAttribute("data-min");
       S.breathing = b.hasAttribute("data-breath");
       $("pace").classList.toggle("hidden", !S.breathing);
+      updateStageMode();
       $("sessionNote").textContent = S.breathing ?
-        "Paced breathing with a guide circle. The report shows time in high, medium, and low coherence." :
+        "Paced breathing with a guide circle." :
         "A resting reading. Breathe normally and hold still.";
     });
   });
-  $("pace").addEventListener("change", function () { S.pace = +$("pace").value; });
+  $("pace").addEventListener("change", function () { S.pace = +$("pace").value; updateStageMode(); });
   function breathSummary() {
     if (!S.breathing) return null;
     var tot = S.zones.High + S.zones.Medium + S.zones.Low;
@@ -931,6 +970,32 @@ function coherence(raw, good, tNowMs) {
     return { pace: S.pace, high: 100 * S.zones.High / tot, medium: 100 * S.zones.Medium / tot, low: 100 * S.zones.Low / tot,
       rate: S.rateN ? S.rateSum / S.rateN : null, seconds: tot / 1000 };
   }
+
+  // ---------- Layout helpers ----------
+  function updateStageMode() {
+    $("pacer").classList.toggle("hidden", !S.breathing);
+    $("charts").classList.toggle("hidden", S.breathing);
+    $("minis").classList.toggle("hidden", S.breathing);
+    if (S.breathing && !S.running) {
+      $("orb").style.transform = "scale(0.72)"; $("orb").className = "orb"; $("cue").textContent = "Breathe";
+      $("coach").textContent = "Tap Start. Then breathe in as the circle grows, out as it shrinks.";
+      $("cohline").textContent = "Pace: " + S.pace + " breaths/min";
+    }
+    sizeStage();
+    if (!S.running) { drawWave(); drawTacho(); }
+  }
+  function sizeStage() {
+    var w = $("stagewrap"); if (!w || $("pacer").classList.contains("hidden")) return;
+    var r = w.getBoundingClientRect(), d = Math.max(120, Math.min(r.width, r.height) - 4);
+    $("stage").style.width = d + "px"; $("stage").style.height = d + "px";
+  }
+  function openSheet(id) { $(id).classList.remove("hidden"); $(id).scrollTop = 0; var f = $(id).querySelector(".sheetclose"); if (f) f.focus(); }
+  function closeSheet(id) { $(id).classList.add("hidden"); }
+  $("helpBtn").addEventListener("click", function () { openSheet("helpSheet"); });
+  Array.prototype.forEach.call(document.querySelectorAll(".sheetclose"), function (b) {
+    b.addEventListener("click", function () { closeSheet(b.getAttribute("data-close")); });
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeSheet("helpSheet"); closeSheet("reportSheet"); } });
 
   // ---------- UI wiring ----------
   function setMode(m) {
@@ -941,10 +1006,11 @@ function coherence(raw, good, tNowMs) {
   }
   $("modeFront").addEventListener("click", function () { setMode("front"); });
   $("modeRear").addEventListener("click", function () { setMode("rear"); });
-  $("startBtn").addEventListener("click", function () { if (S.running) finish(); else start(); });
+  $("startBtn").addEventListener("click", function () { if (S.running) finish(); });
+  $("lastRep").addEventListener("click", function () { openSheet("reportSheet"); });
   document.addEventListener("visibilitychange", function () { if (document.hidden && S.running) finish(); });
-  window.addEventListener("resize", function () { if (!S.running) { drawWave(); drawTacho(); } });
-  drawWave(); drawTacho();
+  window.addEventListener("resize", function () { sizeStage(); if (!S.running) { drawWave(); drawTacho(); } });
+  updateStageMode();
 })();
 </script>
 </body>
