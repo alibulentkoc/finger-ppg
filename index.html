@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Finger Pulse and HRV</title>
+<style>
+:root {
+  --bg: #eef1f4;
+  --panel: #ffffff;
+  --ink: #16202b;
+  --muted: #5a6776;
+  --line: #d3dae2;
+  --trace: #c4122f;
+  --tacho: #1d5c8c;
+  --good: #1f7a3d;
+  --warn: #9a5b00;
+  --bad: #b3261e;
+  --btn: #16202b;
+  --btnInk: #ffffff;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10151b; --panel: #18202a; --ink: #e7ecf1; --muted: #93a1b0; --line: #2a3542;
+    --trace: #ff5470; --tacho: #6fb3e8; --good: #5fcf7f; --warn: #f0b24a; --bad: #ff6b61;
+    --btn: #e7ecf1; --btnInk: #10151b;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10151b; --panel: #18202a; --ink: #e7ecf1; --muted: #93a1b0; --line: #2a3542;
+  --trace: #ff5470; --tacho: #6fb3e8; --good: #5fcf7f; --warn: #f0b24a; --bad: #ff6b61;
+  --btn: #e7ecf1; --btnInk: #10151b;
+}
+:root.lamp { --bg: #ffffff; --panel: #ffffff; }
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Avenir Next", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.45;
+}
+.wrap { max-width: 640px; margin: 0 auto; padding: 12px 16px 28px; }
+.lampband {
+  display: none; height: 26vh; min-height: 150px; background: #ffffff;
+  margin: calc(-1 * env(safe-area-inset-top, 0px)) -16px 8px; padding-top: env(safe-area-inset-top, 0px);
+  text-align: center; color: #5a6776; font-size: 14px;
+}
+:root.lamp .lampband { display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; }
+h1 { font-size: 22px; font-weight: 600; margin: 6px 0 2px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+.scope {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 10px 12px 8px; margin-bottom: 12px;
+}
+.scopehead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.hr { font-size: 56px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hr small { font-size: 16px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+.status { text-align: right; font-size: 13px; color: var(--muted); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); margin-right: 5px; vertical-align: 0; }
+.dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+canvas.plot { width: 100%; display: block; }
+#wave { height: 120px; margin-top: 6px; }
+#tacho { height: 110px; }
+.caption { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.m { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.m .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.m .k { font-size: 12px; color: var(--muted); }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.seg button { border: 0; background: transparent; color: var(--ink); padding: 10px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.go { border: 0; border-radius: 10px; padding: 11px 20px; font: inherit; font-weight: 600; background: var(--btn); color: var(--btnInk); cursor: pointer; min-width: 110px; }
+.ghost { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font: inherit; font-size: 14px; background: var(--panel); color: var(--ink); cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--tacho); outline-offset: 2px; }
+.msg { font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); margin-bottom: 12px; }
+.msg.err { border-color: var(--bad); color: var(--bad); }
+.how { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px 10px; font-size: 14px; }
+.how h2 { font-size: 15px; margin: 10px 0 4px; }
+.how ol, .how ul { padding-left: 20px; margin: 4px 0 8px; }
+.how p { margin: 4px 0 8px; color: var(--muted); }
+.preview { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.preview video { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; background: #000; border: 1px solid var(--line); }
+textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); padding: 8px; }
+.hidden { display: none !important; }
+@media (max-width: 420px) { .metrics { grid-template-columns: repeat(2, 1fr); } .hr { font-size: 48px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="lampband" id="lampband">
+    <div>^ The front camera sits in the Dynamic Island, top center.</div>
+    <div>Rest your fingertip lightly over it. This white area lights your finger.</div>
+  </div>
+
+  <h1>Finger pulse and HRV</h1>
+  <p class="sub">Contact photoplethysmography with the phone camera. For learning and demos, not for medical use.</p>
+
+  <div class="scope">
+    <div class="scopehead">
+      <div class="hr" id="hr">--<small>bpm</small></div>
+      <div class="status">
+        <div><span class="dot" id="fdot"></span><span id="ftext">Not running</span></div>
+        <div id="qtext">Signal: --</div>
+        <div id="fpstext">-- fps</div>
+      </div>
+    </div>
+    <canvas class="plot" id="wave"></canvas>
+    <p class="caption">Pulse wave, last 6 s. Dots mark detected beats.</p>
+  </div>
+
+  <div class="metrics">
+    <div class="m"><div class="v" id="rmssd">--</div><div class="k">RMSSD (ms)</div></div>
+    <div class="m"><div class="v" id="sdnn">--</div><div class="k">SDNN (ms)</div></div>
+    <div class="m"><div class="v" id="pnn">--</div><div class="k">pNN50 (%)</div></div>
+    <div class="m"><div class="v" id="beats">0</div><div class="k">Clean beats</div></div>
+  </div>
+
+  <div class="scope">
+    <canvas class="plot" id="tacho"></canvas>
+    <p class="caption">Beat-to-beat heart rate, last 60 s. Slow breathing makes this line rise and fall.</p>
+  </div>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Camera">
+      <button id="modeFront" aria-pressed="false">Front camera + screen light</button>
+      <button id="modeRear" aria-pressed="false">Rear camera</button>
+    </div>
+    <button class="go" id="startBtn">Start</button>
+    <button class="ghost" id="dataBtn">Show beat data</button>
+  </div>
+
+  <div class="preview"><video id="vid" playsinline muted autoplay></video><span id="camtext">Tap a camera button to begin. The preview should look evenly red when your finger covers the lens.</span></div>
+
+  <div class="msg hidden" id="msg"></div>
+
+  <div class="hidden" id="dataBox">
+    <textarea id="dataText" readonly></textarea>
+    <div class="controls" style="margin-top:8px"><button class="ghost" id="copyBtn">Copy CSV</button></div>
+  </div>
+
+  <div class="how">
+    <h2>Front camera (recommended on iPhone)</h2>
+    <ol>
+      <li>Turn screen brightness all the way up.</li>
+      <li>Tap "Front camera + screen light". The camera opens right away. Tap Allow if asked. The top of the page turns white.</li>
+      <li>Rest your fingertip over the front camera, top center of the screen. Touch lightly. Pressing hard squeezes out the blood and flattens the signal.</li>
+      <li>Keep your hand and phone still. Sit, rest the forearm on a table.</li>
+      <li>Wait about 10 s for heart rate. HRV values appear after about 20 clean beats. Use 1 to 2 minutes for a stable RMSSD.</li>
+    </ol>
+    <h2>Rear camera</h2>
+    <p>Tap "Rear camera" to open it. Cover the main lens (the top-left lens on most iPhones). Safari usually cannot switch on the flash from a web page, so use a bright lamp or daylight behind your finger. If the browser supports it, the page turns the flash on for you.</p>
+    <h2>Try biofeedback</h2>
+    <p>Breathe in for 5 s and out for 5 s. After a minute, the lower chart should show a smooth wave, one cycle per breath.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- Settings ----------
+  var FS = 50;                 // resample rate, Hz
+  var DT = 1000 / FS;          // ms per sample
+  var HALF = Math.round(0.2 * FS); // peak search half window (200 ms)
+  var WARMUP_MS = 4000;
+
+  // ---------- State ----------
+  var S = {
+    running: false, mode: "front", stream: null, track: null, wake: null,
+    finger: false, onCount: 0, offCount: 0, warmUntil: 0,
+    mr: 0, mg: 0, mb: 0, chan: "r",
+    frames: 0, fps: 0, fpsT: 0, torch: false, rafId: 0, vfcId: 0,
+    accepted: 0, rejected: 0, contig: false
+  };
+  var video = $("vid");
+  var grab = document.createElement("canvas");
+  grab.width = 40; grab.height = 30;
+  var gctx = grab.getContext("2d", { willReadFrequently: true });
+
+  // ---------- Filters ----------
+  function biquad(type, f0, Q) {
+    var w0 = 2 * Math.PI * f0 / FS, cw = Math.cos(w0), sw = Math.sin(w0), al = sw / (2 * Q);
+    var b0, b1, b2;
+    if (type === "lp") { b0 = (1 - cw) / 2; b1 = 1 - cw; b2 = (1 - cw) / 2; }
+    else { b0 = (1 + cw) / 2; b1 = -(1 + cw); b2 = (1 + cw) / 2; }
+    var a0 = 1 + al, a1 = -2 * cw, a2 = 1 - al;
+    b0 /= a0; b1 /= a0; b2 /= a0; a1 /= a0; a2 /= a0;
+    var x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    return {
+      step: function (x) { var y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; },
+      reset: function () { x1 = x2 = y1 = y2 = 0; }
+    };
+  }
+  function makeChain() {
+    var f = [biquad("hp", 0.6, 0.7071), biquad("hp", 0.6, 0.7071), biquad("lp", 3.5, 0.7071), biquad("lp", 3.5, 0.7071)];
+    var dc = null;
+    return {
+      step: function (x) {
+        if (dc === null) dc = x;
+        dc += (x - dc) * 0.02;
+        // More blood = darker image, so invert to make the systolic peak point up.
+        var v = dc > 1 ? -(x - dc) / dc : 0;
+        for (var i = 0; i < f.length; i++) v = f[i].step(v);
+        return v * 1000;
+      },
+      reset: function () { dc = null; for (var i = 0; i < f.length; i++) f[i].reset(); }
+    };
+  }
+  var chR = makeChain(), chG = makeChain();
+
+  // ---------- Buffers ----------
+  var ts = [], ys = [];          // uniformly resampled filtered signal
+  var peakMarks = [];            // times of accepted peaks (for the wave plot)
+  var beats = [];                // {t, ibi, contig}
+  var lastPeakT = null, recent = [], rejectRun = 0;
+  var prev = null, nextT = null;
+
+  function resetSignal() {
+    chR.reset(); chG.reset();
+    ts = []; ys = []; peakMarks = [];
+    lastPeakT = null; recent = []; rejectRun = 0; S.contig = false;
+    prev = null; nextT = null;
+  }
+  function resetAll() {
+    resetSignal(); beats = []; S.accepted = 0; S.rejected = 0;
+  }
+
+  function median(a) {
+    var b = a.slice().sort(function (x, y) { return x - y; });
+    var n = b.length; if (!n) return null;
+    return n % 2 ? b[(n - 1) / 2] : 0.5 * (b[n / 2 - 1] + b[n / 2]);
+  }
+  function mean(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
+
+  // ---------- Resample irregular camera frames to FS ----------
+  function pushRaw(t, r, g) {
+    if (prev && t <= prev.t) return;
+    if (!prev) { prev = { t: t, r: r, g: g }; nextT = t; return; }
+    if (t - prev.t > 400) { resetSignal(); prev = { t: t, r: r, g: g }; nextT = t; return; }
+    while (nextT <= t) {
+      var a = (nextT - prev.t) / (t - prev.t);
+      processSample(nextT, prev.r + a * (r - prev.r), prev.g + a * (g - prev.g));
+      nextT += DT;
+    }
+    prev = { t: t, r: r, g: g };
+  }
+
+  function processSample(t, r, g) {
+    var yr = chR.step(r), yg = chG.step(g);
+    ts.push(t); ys.push(S.chan === "r" ? yr : yg);
+    if (ys.length > FS * 14) { ys.splice(0, FS * 2); ts.splice(0, FS * 2); }
+    detectPeak();
+  }
+
+  // ---------- Peak detection with sub-sample refinement ----------
+  function detectPeak() {
+    var n = ys.length - 1, c = n - HALF;
+    if (c < HALF + 1) return;
+    var yc = ys[c];
+    if (!(ys[c - 1] < yc)) return;
+    for (var i = c - HALF; i <= c + HALF; i++) { if (ys[i] > yc) return; }
+    var mx = 0, st = Math.max(0, n - FS * 4);
+    for (var j = st; j <= n; j++) { var v = Math.abs(ys[j]); if (v > mx) mx = v; }
+    if (yc < 0.3 * mx) return;
+    var d = ys[c - 1] - 2 * yc + ys[c + 1];
+    var delta = d !== 0 ? 0.5 * (ys[c - 1] - ys[c + 1]) / d : 0;
+    delta = Math.max(-0.5, Math.min(0.5, delta));
+    onPeak(ts[c] + delta * DT);
+  }
+
+  function onPeak(tp) {
+    if (!S.finger || performance.now() < S.warmUntil) { lastPeakT = null; S.contig = false; return; }
+    if (lastPeakT === null) { lastPeakT = tp; peakMarks.push(tp); return; }
+    var ibi = tp - lastPeakT;
+    if (ibi < 330) return;                       // too close: likely a notch, keep the earlier beat
+    lastPeakT = tp; peakMarks.push(tp);
+    if (ibi > 1600) { recent = []; S.contig = false; return; }
+    var med = recent.length >= 3 ? median(recent) : null;
+    if (med && Math.abs(ibi - med) / med > 0.3) {
+      S.rejected++; S.contig = false; rejectRun++;
+      if (rejectRun >= 3) { recent = []; rejectRun = 0; }
+      return;
+    }
+    rejectRun = 0; recent.push(ibi); if (recent.length > 7) recent.shift();
+    beats.push({ t: tp, ibi: ibi, contig: S.contig });
+    S.contig = true; S.accepted++;
+    if (beats.length > 2000) beats.splice(0, 500);
+  }
+
+  // ---------- Metrics ----------
+  function metrics() {
+    var now = ts.length ? ts[ts.length - 1] : 0;
+    var w = beats.filter(function (b) { return now - b.t <= 60000; });
+    var out = { hr: null, rmssd: null, sdnn: null, pnn: null, n: w.length };
+    var last = beats.slice(-6).filter(function (b) { return now - b.t < 8000; });
+    if (last.length >= 3) out.hr = 60000 / median(last.map(function (b) { return b.ibi; }));
+    if (w.length >= 20) {
+      var ib = w.map(function (b) { return b.ibi; });
+      var m = mean(ib);
+      out.sdnn = Math.sqrt(mean(ib.map(function (x) { return (x - m) * (x - m); })));
+      var ss = 0, cnt = 0, n50 = 0;
+      for (var i = 1; i < w.length; i++) {
+        if (w[i].contig) { var dd = w[i].ibi - w[i - 1].ibi; ss += dd * dd; cnt++; if (Math.abs(dd) > 50) n50++; }
+      }
+      if (cnt >= 15) { out.rmssd = Math.sqrt(ss / cnt); out.pnn = 100 * n50 / cnt; }
+    }
+    return out;
+  }
+
+  // ---------- Frame sampling ----------
+  function sampleFrame(t) {
+    if (video.readyState < 2) return;
+    gctx.drawImage(video, 0, 0, 40, 30);
+    var d = gctx.getImageData(8, 6, 24, 18).data;
+    var n = d.length / 4, sr = 0, sg = 0, sb = 0, sr2 = 0;
+    for (var i = 0; i < d.length; i += 4) { sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; sr2 += d[i] * d[i]; }
+    var mr = sr / n, mg = sg / n, mb = sb / n;
+    var cv = mr > 0 ? Math.sqrt(Math.max(0, sr2 / n - mr * mr)) / mr : 1;
+    S.mr = mr; S.mg = mg; S.mb = mb;
+
+    // Finger covering the lens: bright, red-dominant, and spatially uniform.
+    var on = mr > 25 && mr > 1.25 * mg && mr > 1.25 * mb && cv < 0.35;
+    if (on) { S.onCount++; S.offCount = 0; } else { S.offCount++; S.onCount = 0; }
+    if (!S.finger && S.onCount >= 10) { S.finger = true; S.warmUntil = performance.now() + WARMUP_MS; resetSignal(); }
+    if (S.finger && S.offCount >= 5) { S.finger = false; lastPeakT = null; recent = []; S.contig = false; }
+
+    // Use red unless it is saturated (typical with the flash), then use green.
+    var want = S.chan;
+    if (S.chan === "r" && mr > 245) want = "g";
+    if (S.chan === "g" && mr < 232) want = "r";
+    if (want !== S.chan) { S.chan = want; lastPeakT = null; S.contig = false; }
+
+    pushRaw(t, mr, mg);
+    S.frames++;
+  }
+
+  function onVideoFrame(now, meta) {
+    if (!S.running) return;
+    var t = now;
+    if (meta && typeof meta.captureTime === "number" && isFinite(meta.captureTime) && Math.abs(meta.captureTime - now) < 1000) t = meta.captureTime;
+    sampleFrame(t);
+    S.vfcId = video.requestVideoFrameCallback(onVideoFrame);
+  }
+  var lastVT = -1;
+  function onRaf() {
+    if (!S.running) return;
+    if (video.currentTime !== lastVT) { lastVT = video.currentTime; sampleFrame(performance.now()); }
+    S.rafLoop = requestAnimationFrame(onRaf);
+  }
+
+  // ---------- Drawing ----------
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function fitCanvas(cv) {
+    var dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
+    var w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    return dpr;
+  }
+  function drawWave() {
+    var cv = $("wave"), dpr = fitCanvas(cv), c = cv.getContext("2d"), W = cv.width, H = cv.height;
+    c.clearRect(0, 0, W, H);
+    c.strokeStyle = css("--line"); c.lineWidth = 1 * dpr;
+    c.beginPath(); c.moveTo(0, H / 2); c.lineTo(W, H / 2); c.stroke();
+    if (ys.length < 5) return;
+    var tEnd = ts[ts.length - 1], tStart = tEnd - 6000;
+    var i0 = 0; while (i0 < ts.length && ts[i0] < tStart) i0++;
+    var mx = 1e-6; for (var i = i0; i < ys.length; i++) mx = Math.max(mx, Math.abs(ys[i]));
+    var sy = (H * 0.44) / mx;
+    c.strokeStyle = css("--trace"); c.lineWidth = 2.2 * dpr; c.lineJoin = "round";
+    c.beginPath();
+    for (var k = i0; k < ys.length; k++) {
+      var x = (ts[k] - tStart) / 6000 * W, y = H / 2 - ys[k] * sy;
+      if (k === i0) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+    c.stroke();
+    c.fillStyle = css("--ink");
+    for (var p = 0; p < peakMarks.length; p++) {
+      var tp = peakMarks[p]; if (tp < tStart) continue;
+      var j = Math.min(ys.length - 1, Math.max(0, Math.round((tp - ts[0]) / DT)));
+      c.beginPath(); c.arc((tp - tStart) / 6000 * W, H / 2 - ys[j] * sy, 3.5 * dpr, 0, 2 * Math.PI); c.fill();
+    }
+    if (peakMarks.length > 200) peakMarks.splice(0, 100);
+  }
+  function drawTacho() {
+    var cv = $("tacho"), dpr = fitCanvas(cv), c = cv.getContext("2d"), W = cv.width, H = cv.height;
+    c.clearRect(0, 0, W, H);
+    var tEnd = ts.length ? ts[ts.length - 1] : 0, tStart = tEnd - 60000;
+    var w = beats.filter(function (b) { return b.t >= tStart; });
+    c.fillStyle = css("--muted"); c.font = (11 * dpr) + "px sans-serif";
+    if (w.length < 2) { c.fillText("Waiting for clean beats", 6 * dpr, H / 2); return; }
+    var hr = w.map(function (b) { return 60000 / b.ibi; });
+    var lo = Math.min.apply(null, hr), hi = Math.max.apply(null, hr);
+    var pad = Math.max(3, (hi - lo) * 0.15); lo -= pad; hi += pad;
+    var padL = 34 * dpr;
+    function X(t) { return padL + (t - tStart) / 60000 * (W - padL - 4 * dpr); }
+    function Y(v) { return H - 6 * dpr - (v - lo) / (hi - lo) * (H - 12 * dpr); }
+    c.fillText(Math.round(hi - pad), 2 * dpr, 12 * dpr);
+    c.fillText(Math.round(lo + pad), 2 * dpr, H - 4 * dpr);
+    c.strokeStyle = css("--tacho"); c.lineWidth = 2 * dpr; c.lineJoin = "round";
+    c.beginPath();
+    for (var i = 0; i < w.length; i++) {
+      var x = X(w[i].t), y = Y(hr[i]);
+      if (i === 0 || !w[i].contig) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+    c.stroke();
+    c.fillStyle = css("--tacho");
+    for (var k = 0; k < w.length; k++) { c.beginPath(); c.arc(X(w[k].t), Y(hr[k]), 2.2 * dpr, 0, 2 * Math.PI); c.fill(); }
+  }
+
+  function render() {
+    if (!S.running) return;
+    drawWave(); drawTacho();
+    S.rafId = requestAnimationFrame(render);
+  }
+
+  // ---------- Text readouts ----------
+  function fmt(v, dp) { return v === null || !isFinite(v) ? "--" : v.toFixed(dp); }
+  function updateText() {
+    if (!S.running) return;
+    var now = performance.now();
+    if (now - S.fpsT >= 1000) { S.fps = S.frames * 1000 / (now - S.fpsT); S.frames = 0; S.fpsT = now; }
+    var m = metrics();
+    $("hr").innerHTML = (m.hr ? Math.round(m.hr) : "--") + "<small>bpm</small>";
+    $("rmssd").textContent = fmt(m.rmssd, 0);
+    $("sdnn").textContent = fmt(m.sdnn, 0);
+    $("pnn").textContent = fmt(m.pnn, 0);
+    $("beats").textContent = m.n;
+    $("fpstext").textContent = S.fps.toFixed(0) + " fps, " + (S.chan === "r" ? "red" : "green") + " channel";
+
+    var dot = $("fdot"), ft = $("ftext");
+    if (!S.finger) { dot.className = "dot bad"; ft.textContent = "No finger on lens"; }
+    else if (now < S.warmUntil) { dot.className = "dot warn"; ft.textContent = "Settling, hold still"; }
+    else { dot.className = "dot good"; ft.textContent = "Finger detected"; }
+
+    var tot = S.accepted + S.rejected;
+    var q = tot >= 8 ? S.accepted / tot : null;
+    $("qtext").textContent = "Signal: " + (q === null ? "--" : q > 0.9 ? "good" : q > 0.75 ? "fair" : "noisy") +
+      (q === null ? "" : " (" + Math.round(q * 100) + "% beats kept)");
+  }
+
+  // ---------- Camera control ----------
+  function showMsg(text, isErr) {
+    var el = $("msg"); el.textContent = text; el.classList.remove("hidden");
+    el.classList.toggle("err", !!isErr);
+  }
+  function hideMsg() { $("msg").classList.add("hidden"); }
+
+  function setLamp(on) {
+    var r = document.documentElement;
+    if (on) { r.classList.add("lamp"); r.setAttribute("data-theme", "light"); window.scrollTo(0, 0); }
+    else { r.classList.remove("lamp"); r.removeAttribute("data-theme"); }
+  }
+
+  function start() {
+    hideMsg();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showMsg("This browser cannot open the camera from this page. Open the page directly in Safari (not inside another app) over https.", true);
+      return;
+    }
+    var cons = {
+      audio: false,
+      video: {
+        facingMode: S.mode === "front" ? "user" : "environment",
+        width: { ideal: 640 }, height: { ideal: 480 },
+        frameRate: { ideal: 60, max: 60 }
+      }
+    };
+    navigator.mediaDevices.getUserMedia(cons).then(function (stream) {
+      S.stream = stream; S.track = stream.getVideoTracks()[0];
+      video.srcObject = stream;
+      return video.play();
+    }).then(function () {
+      resetAll();
+      S.running = true; S.finger = false; S.onCount = 0; S.offCount = 0;
+      S.frames = 0; S.fpsT = performance.now(); S.chan = "r";
+      $("startBtn").textContent = "Stop";
+      if (S.mode === "front") setLamp(true);
+      if (S.mode === "rear") tryTorch(); else $("camtext").textContent = "Front camera. Cover it fully with your fingertip.";
+      if ("requestVideoFrameCallback" in HTMLVideoElement.prototype) S.vfcId = video.requestVideoFrameCallback(onVideoFrame);
+      else onRaf();
+      S.rafId = requestAnimationFrame(render);
+      S.textTimer = setInterval(updateText, 250);
+      if (navigator.wakeLock && navigator.wakeLock.request) {
+        navigator.wakeLock.request("screen").then(function (w) { S.wake = w; }).catch(function () {});
+      }
+    }).catch(function (e) {
+      var name = e && e.name ? e.name : "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        showMsg("Camera access is blocked. A web page cannot open Settings for you, so allow it in one of these places, then tap the camera button again. " +
+          "(1) In Safari, tap the aA button in the address bar > Website Settings > Camera > Allow. " +
+          "(2) Or open the iPhone Settings app > Apps > Safari > Camera > Allow. " +
+          "(3) If this page is open inside another app, open the link in Safari instead.", true);
+        $("camtext").textContent = "Camera blocked. See the message above.";
+      } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+        showMsg("No matching camera was found. Try the other camera option.", true);
+      } else {
+        showMsg("The camera could not start (" + (name || "unknown error") + "). Reload the page and try again.", true);
+      }
+      stop();
+    });
+  }
+
+  function tryTorch() {
+    var tr = S.track, caps = {};
+    try { caps = tr.getCapabilities ? tr.getCapabilities() : {}; } catch (e) { caps = {}; }
+    if (caps && caps.torch) {
+      tr.applyConstraints({ advanced: [{ torch: true }] }).then(function () {
+        S.torch = true; $("camtext").textContent = "Rear camera with flash on. Cover the main lens and flash with your fingertip.";
+      }).catch(function () {
+        $("camtext").textContent = "Flash could not be switched on. Use a bright lamp behind your finger.";
+      });
+    } else {
+      $("camtext").textContent = "This browser cannot control the flash. Use a bright lamp or daylight behind your finger.";
+    }
+  }
+
+  function stop() {
+    S.running = false;
+    if (S.vfcId && video.cancelVideoFrameCallback) { try { video.cancelVideoFrameCallback(S.vfcId); } catch (e) {} }
+    if (S.rafLoop) cancelAnimationFrame(S.rafLoop);
+    if (S.rafId) cancelAnimationFrame(S.rafId);
+    if (S.textTimer) clearInterval(S.textTimer);
+    if (S.stream) S.stream.getTracks().forEach(function (t) { t.stop(); });
+    S.stream = null; S.track = null; S.torch = false;
+    if (S.wake) { try { S.wake.release(); } catch (e) {} S.wake = null; }
+    video.srcObject = null;
+    setLamp(false);
+    $("startBtn").textContent = "Start";
+    $("fdot").className = "dot"; $("ftext").textContent = "Stopped";
+  }
+
+  // ---------- UI wiring ----------
+  // Tapping a camera button opens that camera right away.
+  function setMode(m) {
+    if (S.running && S.mode === m) return;
+    if (S.running) stop();
+    S.mode = m;
+    $("modeFront").setAttribute("aria-pressed", m === "front" ? "true" : "false");
+    $("modeRear").setAttribute("aria-pressed", m === "rear" ? "true" : "false");
+    $("camtext").textContent = "Opening camera...";
+    start();
+  }
+  $("modeFront").addEventListener("click", function () { setMode("front"); });
+  $("modeRear").addEventListener("click", function () { setMode("rear"); });
+  $("startBtn").addEventListener("click", function () { if (S.running) stop(); else start(); });
+
+  function csv() {
+    var lines = ["beat_time_s,ibi_ms,contiguous"];
+    var t0 = beats.length ? beats[0].t : 0;
+    beats.forEach(function (b) { lines.push(((b.t - t0) / 1000).toFixed(3) + "," + b.ibi.toFixed(1) + "," + (b.contig ? 1 : 0)); });
+    return lines.join("\n");
+  }
+  $("dataBtn").addEventListener("click", function () {
+    var box = $("dataBox"), open = box.classList.contains("hidden");
+    if (open) { $("dataText").value = csv(); box.classList.remove("hidden"); $("dataBtn").textContent = "Hide beat data"; }
+    else { box.classList.add("hidden"); $("dataBtn").textContent = "Show beat data"; }
+  });
+  $("copyBtn").addEventListener("click", function () {
+    var txt = csv(); $("dataText").value = txt;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { $("copyBtn").textContent = "Copied"; setTimeout(function () { $("copyBtn").textContent = "Copy CSV"; }, 1500); })
+        .catch(function () { $("dataText").select(); });
+    } else { $("dataText").select(); }
+  });
+
+  document.addEventListener("visibilitychange", function () { if (document.hidden && S.running) stop(); });
+  window.addEventListener("resize", function () { if (!S.running) { drawWave(); drawTacho(); } });
+  drawWave(); drawTacho();
+})();
+</script>
+</body>
+</html>
