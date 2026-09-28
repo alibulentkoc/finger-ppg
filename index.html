@@ -10,6 +10,7 @@
   --bg: #eef1f4; --panel: #ffffff; --ink: #16202b; --muted: #5a6776; --line: #d3dae2;
   --trace: #c4122f; --tacho: #1d5c8c; --good: #1f7a3d; --warn: #9a5b00; --bad: #b3261e;
   --btn: #16202b; --btnInk: #ffffff; --soft: #e4ecf3;
+  --cohLow: #ecd3a4; --cohMed: #a9cbe6; --cohHigh: #9fd8b1;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -20,12 +21,14 @@
     --bg: #10151b; --panel: #18202a; --ink: #e7ecf1; --muted: #93a1b0; --line: #2a3542;
     --trace: #ff5470; --tacho: #6fb3e8; --good: #5fcf7f; --warn: #f0b24a; --bad: #ff6b61;
     --btn: #e7ecf1; --btnInk: #10151b; --soft: #1f2b38;
+    --cohLow: #6b5020; --cohMed: #24527a; --cohHigh: #22663a;
   }
 }
 :root[data-theme="dark"] {
   --bg: #10151b; --panel: #18202a; --ink: #e7ecf1; --muted: #93a1b0; --line: #2a3542;
   --trace: #ff5470; --tacho: #6fb3e8; --good: #5fcf7f; --warn: #f0b24a; --bad: #ff6b61;
   --btn: #e7ecf1; --btnInk: #10151b; --soft: #1f2b38;
+    --cohLow: #6b5020; --cohMed: #24527a; --cohHigh: #22663a;
 }
 :root.lamp { --bg: #ffffff; --panel: #ffffff; }
 *, *::before, *::after { box-sizing: inherit; }
@@ -90,6 +93,26 @@ button:focus-visible { outline: 3px solid var(--tacho); outline-offset: 2px; }
 .fine { font-size: 12px; color: var(--muted); }
 textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); padding: 8px; }
 .hidden { display: none !important; }
+.session { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 12px; }
+.session .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.session .lab { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+.seg.small button { padding: 9px 11px; }
+select { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); }
+.seg button:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
+.pacer { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 12px 12px; margin-bottom: 12px; text-align: center; }
+.stage { position: relative; width: min(62vw, 250px); height: min(62vw, 250px); margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; }
+.ring { position: absolute; inset: 0; border-radius: 50%; border: 2px dashed var(--line); }
+.orb { width: 100%; height: 100%; border-radius: 50%; background: var(--cohLow); transform: scale(0.45); transition: background-color 1.5s ease; }
+.orb.Medium { background: var(--cohMed); } .orb.High { background: var(--cohHigh); }
+.cue { position: absolute; font-size: 20px; font-weight: 600; color: var(--ink); }
+.coach { font-size: 17px; font-weight: 600; min-height: 2.6em; margin: 4px 0 8px; }
+.cohline { font-size: 13px; color: var(--muted); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.zones { display: grid; gap: 6px; text-align: left; }
+.zone { display: grid; grid-template-columns: 70px 1fr 44px; align-items: center; gap: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.zone .bar { height: 10px; background: var(--soft); border-radius: 5px; overflow: hidden; }
+.zone .bar div { height: 100%; width: 0%; }
+.zone .pct { text-align: right; }
+:root.running h1, :root.running .sub { display: none; }
 @media (max-width: 420px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hr { font-size: 48px; } }
 @media (prefers-reduced-motion: reduce) { .progress div { transition: none; } }
 </style>
@@ -106,6 +129,17 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
 
   <div class="report hidden" id="report" aria-live="polite"></div>
 
+  <div class="pacer hidden" id="pacer">
+    <div class="stage"><div class="ring"></div><div class="orb" id="orb"></div><div class="cue" id="cue">Breathe in</div></div>
+    <div class="coach" id="coach" aria-live="polite">Follow the circle. Breathe in as it grows, out as it shrinks.</div>
+    <div class="cohline" id="cohline">Coherence: -- (starts after about 30 s)</div>
+    <div class="zones">
+      <div class="zone"><span>High</span><div class="bar"><div id="zHigh" style="background:var(--good)"></div></div><span class="pct" id="pHigh">0%</span></div>
+      <div class="zone"><span>Medium</span><div class="bar"><div id="zMedium" style="background:var(--tacho)"></div></div><span class="pct" id="pMedium">0%</span></div>
+      <div class="zone"><span>Low</span><div class="bar"><div id="zLow" style="background:var(--warn)"></div></div><span class="pct" id="pLow">0%</span></div>
+    </div>
+  </div>
+
   <div class="scope">
     <div class="scopehead">
       <div class="hr" id="hr">--<small>beats/min</small></div>
@@ -116,7 +150,7 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
       </div>
     </div>
     <div class="progress" aria-hidden="true"><div id="pbar"></div></div>
-    <div class="ptext" id="ptext">A reading takes 2 minutes of steady finger contact. The report appears when it ends.</div>
+    <div class="ptext" id="ptext">Pick a session length, then tap a camera button. The report appears when the session ends.</div>
     <canvas class="plot" id="wave"></canvas>
     <p class="caption">Pulse wave, last 6 s. Dots mark detected beats.</p>
   </div>
@@ -135,6 +169,26 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
   <div class="scope">
     <canvas class="plot" id="tacho"></canvas>
     <p class="caption">Beat-to-beat heart rate, last 60 s. Filled dots are clean beats. Open dots were removed as noise.</p>
+  </div>
+
+  <div class="session">
+    <p class="lab">Session</p>
+    <div class="row">
+      <div class="seg small" role="group" aria-label="Session length">
+        <button data-min="2" aria-pressed="true">2 min</button>
+        <button data-min="3" aria-pressed="false">3 min</button>
+        <button data-min="5" aria-pressed="false">5 min</button>
+        <button data-min="10" data-breath="1" aria-pressed="false">10 min breathing</button>
+      </div>
+      <select id="pace" class="hidden" aria-label="Breathing pace">
+        <option value="5">5 breaths/min</option>
+        <option value="5.5">5.5 breaths/min</option>
+        <option value="6" selected>6 breaths/min</option>
+        <option value="6.5">6.5 breaths/min</option>
+        <option value="7">7 breaths/min</option>
+      </select>
+    </div>
+    <p class="lab" id="sessionNote" style="margin:8px 0 0">A resting reading. Breathe normally and hold still.</p>
   </div>
 
   <div class="controls">
@@ -164,6 +218,8 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
     </ol>
     <h2>Rear camera</h2>
     <p>Tap "Rear camera" to open it. Cover the main lens (the top-left lens on most iPhones). Safari usually cannot switch on the flash from a web page, so use a bright lamp or daylight behind your finger. If the browser supports it, the page turns the flash on for you.</p>
+    <h2>Breathing exercise</h2>
+    <p>Choose "10 min breathing" before opening the camera. Breathe in as the circle grows and out as it shrinks. The circle turns green when your heart rate rises and falls smoothly with your breath. This is called coherence. The bars show how much of the session you spent in high, medium, and low coherence. Most people reach high coherence at 5 to 7 breaths per minute. Breathe gently. Slow does not mean deep.</p>
     <h2>Getting comparable readings</h2>
     <p>HRV changes through the day. Measure at the same time each day, ideally in the morning, in the same position. The report compares each reading with your earlier ones on this device.</p>
     <h2>Privacy</h2>
@@ -180,7 +236,7 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
   var FS = 50, DT = 1000 / FS;
   var HALF = Math.round(0.2 * FS);
   var WARMUP_MS = 4000;
-  var TARGET_MS = 120000;       // length of a guided reading
+  var TARGET_MS = 120000;       // session length, set from the picker
   var MIN_REPORT_BEATS = 25;
   var STORE_KEY = "fingerHrvSessions.v1";
 
@@ -188,7 +244,10 @@ textarea { width: 100%; height: 140px; font-family: ui-monospace, Menlo, Consola
     running: false, mode: "front", stream: null, track: null, wake: null,
     finger: false, onCount: 0, offCount: 0, warmUntil: 0,
     chan: "r", frames: 0, fps: 0, fpsT: 0, rafId: 0, vfcId: 0, rafLoop: 0,
-    measured: 0, lastTick: 0, analysis: null, lastAnalyze: 0
+    measured: 0, lastTick: 0, analysis: null, lastAnalyze: 0,
+    minutes: 2, breathing: false, pace: 6, pacerT0: 0,
+    coh: null, lastCoh: 0, zones: { High: 0, Medium: 0, Low: 0 }, rateSum: 0, rateN: 0,
+    coachText: "", coachT: 0
   };
   var video = $("vid");
   var grab = document.createElement("canvas");
@@ -241,6 +300,44 @@ function analyze(raw){
   };
 }
 
+
+
+  // ---------- Coherence: share of HRV power in the main breathing peak ----------
+function coherence(raw, good, tNowMs) {
+  var pts = [];
+  for (var i = 0; i < raw.length; i++) {
+    if (good && good[i] === false) continue;
+    if (raw[i].t < tNowMs - 64000) continue;
+    pts.push({ t: raw[i].t / 1000, v: 60000 / raw[i].ibi });
+  }
+  if (pts.length < 20) return null;
+  var span = pts[pts.length - 1].t - pts[0].t;
+  if (span < 30) return null;
+  var fs = 4, N = Math.floor(span * fs), x = new Array(N), k = 0;
+  for (var n = 0; n < N; n++) {
+    var t = pts[0].t + n / fs;
+    while (k < pts.length - 2 && pts[k + 1].t < t) k++;
+    var p0 = pts[k], p1 = pts[k + 1], a = (t - p0.t) / (p1.t - p0.t);
+    x[n] = p0.v + Math.max(0, Math.min(1, a)) * (p1.v - p0.v);
+  }
+  var sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (n = 0; n < N; n++) { sx += n; sy += x[n]; sxx += n * n; sxy += n * x[n]; }
+  var slope = (N * sxy - sx * sy) / (N * sxx - sx * sx), icpt = (sy - slope * sx) / N;
+  for (n = 0; n < N; n++) x[n] = (x[n] - (icpt + slope * n)) * (0.5 - 0.5 * Math.cos(2 * Math.PI * n / (N - 1)));
+  var df = 0.005, fr = [], P = [];
+  for (var f = 0.005; f <= 0.4001; f += df) {
+    var re = 0, im = 0, w = 2 * Math.PI * f / fs;
+    for (n = 0; n < N; n++) { re += x[n] * Math.cos(w * n); im -= x[n] * Math.sin(w * n); }
+    fr.push(f); P.push(re * re + im * im);
+  }
+  var pk = -1, pv = -1;
+  for (i = 0; i < fr.length; i++) if (fr[i] >= 0.04 && fr[i] <= 0.26 && P[i] > pv) { pv = P[i]; pk = i; }
+  var hw = Math.max(0.02, 1.6 / span), peak = 0, tot = 0;
+  for (i = 0; i < fr.length; i++) { tot += P[i]; if (Math.abs(fr[i] - fr[pk]) <= hw) peak += P[i]; }
+  if (tot <= 0) return null;
+  var score = 100 * peak / tot;
+  return { score: score, level: score >= 70 ? "High" : score >= 45 ? "Medium" : "Low", perMin: fr[pk] * 60 };
+}
 
 
   // ---------- Filters ----------
@@ -435,9 +532,18 @@ function analyze(raw){
       if (pp.ok) { c.fillStyle = col; c.fill(); } else { c.strokeStyle = css("--muted"); c.lineWidth = 1.4 * dpr; c.stroke(); }
     }
   }
+  function drawPacer() {
+    var period = 60000 / S.pace, ph = ((performance.now() - S.pacerT0) % period) / period, inFrac = 0.4, sc, cue;
+    function ease(x) { return 0.5 - 0.5 * Math.cos(Math.PI * x); }
+    if (ph < inFrac) { sc = 0.45 + 0.55 * ease(ph / inFrac); cue = "Breathe in"; }
+    else { sc = 1 - 0.55 * ease((ph - inFrac) / (1 - inFrac)); cue = "Breathe out"; }
+    $("orb").style.transform = "scale(" + sc.toFixed(3) + ")";
+    if ($("cue").textContent !== cue) $("cue").textContent = cue;
+  }
   function render() {
     if (!S.running) return;
     drawWave(); drawTacho();
+    if (S.breathing) drawPacer();
     S.rafId = requestAnimationFrame(render);
   }
 
@@ -476,7 +582,49 @@ function analyze(raw){
     $("pbar").style.width = (frac * 100).toFixed(1) + "%";
     $("ptext").textContent = measuring ? "Measuring. " + mmss(TARGET_MS - S.measured) + " left. Keep still." :
       S.finger ? "Settling. Hold still." : "Place your fingertip over the camera. The timer pauses while it is off.";
+    if (S.breathing) updateBreathing(now, dt, measuring, a);
     if (S.measured >= TARGET_MS) finish();
+  }
+
+  function setCoach(text, now, force) {
+    if (text === S.coachText) return;
+    if (!force && now - S.coachT < 4000) return;   // keep each message up long enough to read
+    S.coachText = text; S.coachT = now; $("coach").textContent = text;
+  }
+  function updateBreathing(now, dt, measuring, a) {
+    if (measuring && now - S.lastCoh > 2000 && rawLog.length) {
+      S.coh = coherence(rawLog, a ? a.good : null, rawLog[rawLog.length - 1].t);
+      S.lastCoh = now;
+    }
+    if (!measuring) S.coh = S.finger ? S.coh : null;
+    var c = S.coh;
+    if (measuring && c) {
+      S.zones[c.level] += dt;
+      if (c.score >= 45) { S.rateSum += c.perMin * dt; S.rateN += dt; }
+    }
+    var tot = S.zones.High + S.zones.Medium + S.zones.Low;
+    ["High", "Medium", "Low"].forEach(function (z) {
+      var p = tot ? 100 * S.zones[z] / tot : 0;
+      $("z" + z).style.width = p.toFixed(1) + "%"; $("p" + z).textContent = Math.round(p) + "%";
+    });
+    var orb = $("orb");
+    orb.className = "orb" + (c && measuring ? " " + c.level : "");
+    $("cohline").textContent = c && measuring ?
+      "Coherence " + Math.round(c.score) + "% (" + c.level + "). Breathing rate from your heart rhythm: about " + c.perMin.toFixed(1) + " per min." :
+      "Coherence: -- (starts after about 30 s of clean beats)";
+
+    var recent = a && a.good ? a.good.slice(-20) : [];
+    var keptRecent = recent.length >= 10 ? recent.filter(Boolean).length / recent.length : 1;
+    if (!S.finger) return setCoach("Put your fingertip back over the camera.", now, true);
+    if (!measuring) return setCoach("Hold still while the signal settles.", now, true);
+    if (keptRecent < 0.7) return setCoach("Hold your hand still. Keep a light, steady touch.", now);
+    if (!c) return setCoach("Follow the circle. Breathe in as it grows, out as it shrinks.", now);
+    var off = c.perMin - S.pace;
+    if (c.score >= 45 && off > 1.2) return setCoach("Breathe slower. Stretch each breath out with the circle.", now);
+    if (c.score >= 45 && off < -1.2) return setCoach("A little faster. Match the circle.", now);
+    if (c.level === "High") return setCoach("In sync. Keep this easy rhythm.", now);
+    if (c.level === "Medium") return setCoach("Good. Keep breathing smoothly with the circle.", now);
+    return setCoach("Relax your shoulders. Breathe gently through your nose. Slow, not deep.", now);
   }
 
   // ---------- Report ----------
@@ -492,7 +640,7 @@ function analyze(raw){
     return ["Low", "Medium", "High"][g];
   }
 
-  function buildReport(a, history) {
+  function buildReport(a, history, br) {
     var q = grade(a);
     var P = [];   // [heading or null, text]
     var hrTxt = a.hr ? Math.round(a.hr) : null;
@@ -519,9 +667,10 @@ function analyze(raw){
       P.push(["Heart rate", hrMsg]);
     }
 
-    var past = history.filter(function (h) { return h.quality !== "Low" && typeof h.rmssd === "number"; });
+    var past = history.filter(function (h) { return h.quality !== "Low" && typeof h.rmssd === "number" && h.mode !== "breathing"; });
     var cmp;
-    if (q === "Low") cmp = "This reading will not be used for comparisons because of its quality.";
+    if (br) cmp = "HRV during slow breathing is naturally higher than at rest, so this session is not compared with your resting readings.";
+    else if (q === "Low") cmp = "This reading will not be used for comparisons because of its quality.";
     else if (past.length >= 3) {
       var recent = past.slice(-7).map(function (h) { return h.rmssd; });
       var base = median(recent), pct = 100 * (a.rmssd - base) / base;
@@ -532,6 +681,18 @@ function analyze(raw){
     }
     P.push(["Compared with your earlier readings", cmp]);
 
+    if (br) {
+      var bt;
+      if (!br.seconds) bt = "Coherence could not be measured. It needs at least 30 seconds of clean beats.";
+      else {
+        bt = "You spent " + Math.round(br.high) + "% of the session in high coherence, " + Math.round(br.medium) + "% in medium, and " + Math.round(br.low) + "% in low. " +
+          "Coherence means your heart rate rose and fell in a smooth, regular wave with your breathing. " +
+          (br.rate ? "Your breathing rate, estimated from your heart rhythm, was about " + br.rate.toFixed(1) + " per minute (the guide was " + br.pace + "). " : "") +
+          (br.high >= 50 ? "That is a strong session." : br.high + br.medium >= 50 ? "That is a solid session. High coherence usually grows with regular practice." :
+            "Coherence usually improves with practice. Breathe gently, let the out-breath be a little longer, and try a slightly different pace next time.");
+      }
+      P.push(["Breathing exercise", bt]);
+    }
     var qt = q + " quality. " + a.kept + " of " + a.n + " beats (" + Math.round(a.keptPct) + "%) passed the checks. The longest clean run was " + a.bestRun + " beats in a row.";
     var tips = [];
     if (a.pairs + a.spikes >= 2) tips.push("Some beats were mistimed. This usually comes from small finger movements or changes in pressure. Rest your forearm on a table and keep a light, steady touch.");
@@ -558,6 +719,11 @@ function analyze(raw){
       ["Mistimed beats removed", 2 * a.pairs + a.spikes],
       ["Missed or extra beats removed", a.outliers]
     ];
+    if (br && br.seconds) {
+      rows.push(["Guide pace", br.pace + " breaths/min"]);
+      rows.push(["Time in high / medium / low coherence", Math.round(br.high) + "% / " + Math.round(br.medium) + "% / " + Math.round(br.low) + "%"]);
+      rows.push(["Estimated breathing rate", fmt(br.rate, 1) + " per min"]);
+    }
     return { quality: q, hr: hrTxt, hrv: hrv, paras: P, rows: rows };
   }
 
@@ -573,18 +739,18 @@ function analyze(raw){
   }
 
   var lastReport = null;
-  function showReport(a) {
+  function showReport(a, br) {
     var history = loadHistory();
-    var r = buildReport(a, history);
+    var r = buildReport(a, history, br);
     var when = new Date();
     var whenTxt = when.toLocaleString();
     if (r.hrv !== null || r.hr) {
-      history.push({ date: when.toISOString(), hr: r.hr, rmssd: a.rmssd !== null ? Math.round(a.rmssd * 10) / 10 : null, quality: r.quality, dur: Math.round(a.duration) });
+      history.push({ date: when.toISOString(), hr: r.hr, rmssd: a.rmssd !== null ? Math.round(a.rmssd * 10) / 10 : null, quality: r.quality, dur: Math.round(a.duration), mode: br ? "breathing" : "reading", high: br ? Math.round(br.high) : null });
       saveHistory(history);
     }
     lastReport = { text: reportText(r, whenTxt), csv: csv(a) };
 
-    var h = '<h2>Your report</h2>';
+    var h = '<h2>' + (br ? 'Your breathing session' : 'Your report') + '</h2>';
     h += '<div class="rhead">';
     h += '<div><div class="big" style="color:var(--tacho)">' + (r.hrv !== null ? r.hrv : "--") + '</div><div class="lbl">HRV (RMSSD), ms</div></div>';
     h += '<div><div class="big">' + (r.hr || "--") + '</div><div class="lbl">Heart rate, beats/min</div></div>';
@@ -597,7 +763,7 @@ function analyze(raw){
       h += '<h3>Recent readings on this device</h3><div class="tablewrap"><table class="rtable">';
       hist.forEach(function (x) {
         h += '<tr><td>' + esc(new Date(x.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " + new Date(x.date).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })) +
-          '</td><td>' + (x.rmssd !== null ? Math.round(x.rmssd) + ' ms' : '--') + ', ' + (x.hr || '--') + ' beats/min, ' + esc(x.quality) + '</td></tr>';
+          '</td><td>' + (x.mode === "breathing" ? "Breathing, " + (x.high !== null && x.high !== undefined ? x.high + "% high, " : "") : "") + (x.rmssd !== null ? Math.round(x.rmssd) + ' ms' : '--') + ', ' + (x.hr || '--') + ' beats/min, ' + esc(x.quality) + '</td></tr>';
       });
       h += '</table></div>';
     }
@@ -671,6 +837,12 @@ function analyze(raw){
       S.running = true; S.finger = false; S.onCount = 0; S.offCount = 0;
       S.frames = 0; S.fpsT = performance.now(); S.chan = "r";
       S.measured = 0; S.lastTick = 0; S.analysis = null; S.lastAnalyze = 0;
+      TARGET_MS = S.minutes * 60000;
+      S.coh = null; S.lastCoh = 0; S.zones = { High: 0, Medium: 0, Low: 0 }; S.rateSum = 0; S.rateN = 0;
+      S.coachText = ""; S.coachT = 0; S.pacerT0 = performance.now();
+      $("pacer").classList.toggle("hidden", !S.breathing);
+      document.documentElement.classList.add("running");
+      lockSession(true);
       $("startBtn").textContent = "Stop";
       if (S.mode === "front") { setLamp(true); $("camtext").textContent = "Front camera. Cover it fully with your fingertip."; }
       else tryTorch();
@@ -719,6 +891,9 @@ function analyze(raw){
     if (S.wake) { try { S.wake.release(); } catch (e) {} S.wake = null; }
     video.srcObject = null;
     setLamp(false);
+    $("pacer").classList.add("hidden");
+    document.documentElement.classList.remove("running");
+    lockSession(false);
     $("startBtn").textContent = "Start";
     $("fdot").className = "dot"; $("ftext").textContent = "Stopped";
     $("camtext").textContent = "Tap a camera button to begin. The preview should look evenly red when your finger covers the lens.";
@@ -730,8 +905,31 @@ function analyze(raw){
     var a = analyze(rawLog);
     S.analysis = a;
     drawWave(); drawTacho();
-    if (a && a.n >= MIN_REPORT_BEATS) { showReport(a); $("ptext").textContent = "Reading complete. Your report is at the top."; }
+    if (a && a.n >= MIN_REPORT_BEATS) { showReport(a, breathSummary()); $("ptext").textContent = "Reading complete. Your report is at the top."; }
     else { showMsg("That reading was too short for a report. Keep your fingertip on the camera for at least 30 seconds.", false); $("ptext").textContent = "Reading stopped early."; }
+  }
+
+  // ---------- Session picker ----------
+  var segBtns = Array.prototype.slice.call(document.querySelectorAll(".session .seg button"));
+  function lockSession(on) { segBtns.forEach(function (b) { b.disabled = on; }); $("pace").disabled = on; }
+  segBtns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      segBtns.forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      S.minutes = +b.getAttribute("data-min");
+      S.breathing = b.hasAttribute("data-breath");
+      $("pace").classList.toggle("hidden", !S.breathing);
+      $("sessionNote").textContent = S.breathing ?
+        "Paced breathing with a guide circle. The report shows time in high, medium, and low coherence." :
+        "A resting reading. Breathe normally and hold still.";
+    });
+  });
+  $("pace").addEventListener("change", function () { S.pace = +$("pace").value; });
+  function breathSummary() {
+    if (!S.breathing) return null;
+    var tot = S.zones.High + S.zones.Medium + S.zones.Low;
+    if (!tot) return { pace: S.pace, high: 0, medium: 0, low: 0, rate: null, seconds: 0 };
+    return { pace: S.pace, high: 100 * S.zones.High / tot, medium: 100 * S.zones.Medium / tot, low: 100 * S.zones.Low / tot,
+      rate: S.rateN ? S.rateSum / S.rateN : null, seconds: tot / 1000 };
   }
 
   // ---------- UI wiring ----------
